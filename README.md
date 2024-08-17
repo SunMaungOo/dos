@@ -1,4 +1,4 @@
-# Database Object Extraction (DOS)
+# Database Object Storage (DOS)
 
 ## Overview
 
