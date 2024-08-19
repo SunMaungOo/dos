@@ -5,6 +5,7 @@ from database import get_connection_string,test_connection,get_table_object
 from database import get_view_object,get_function_object,get_procedure_object,get_index_object
 from config import REMOTE_DIR
 from pathlib import Path
+import sys
 
 def help_command():
     print("Usage: python dos.py <remote> <database_uri>")
@@ -66,7 +67,7 @@ def get_connection_info(database_uri:str)->Optional[ConnectionInfo]:
 
 
     
-def main(argv):
+def main(argv)->int:
 
     if len(argv)==2:
         remote_name = argv[0]
@@ -77,7 +78,7 @@ def main(argv):
 
         if connection_info is None:
             help_command()
-            return
+            return 1
         
         connection_str = get_connection_string(host=connection_info.host,\
                                                database_name=connection_info.database,\
@@ -91,7 +92,7 @@ def main(argv):
             print("success")
         else:
             print("fail")
-            return
+            return 1
         
         database_objects:List[DatabaseObject] = list()
 
@@ -102,7 +103,7 @@ def main(argv):
             print("success")
         except:
             print("fail")
-            return
+            return 1
         
 
         print("extracting views:",end="")
@@ -112,7 +113,7 @@ def main(argv):
             print("success")
         except:
             print("fail")
-            return
+            return 1
         
         print("extracting functions:",end="")
 
@@ -121,7 +122,7 @@ def main(argv):
             print("success")
         except:
             print("fail")
-            return
+            return 1
         
         print("extracting procedures:",end="")
 
@@ -130,7 +131,7 @@ def main(argv):
             print("success")
         except:
             print("fail")
-            return
+            return 1
 
         print("extracting indexes:",end="")
 
@@ -139,7 +140,7 @@ def main(argv):
             print("success")
         except:
             print("fail")
-            return
+            return 1
         
         dos_path = Path(REMOTE_DIR)
 
@@ -157,12 +158,14 @@ def main(argv):
             print("success")
         except:
             print("fail")
+            return 1
         
 
-
+        return 0
 
     else:
         help_command()
+        return 1
     
 
 def write_database_object(root_dir:str,remote_name:str,database_object:DatabaseObject):
@@ -185,4 +188,4 @@ def write_database_object(root_dir:str,remote_name:str,database_object:DatabaseO
 
 
 if __name__=="__main__":
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))
