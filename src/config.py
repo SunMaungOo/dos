@@ -2,11 +2,19 @@ REMOTE_DIR = ".dos"
 
 GET_VIEW_CODE = """
 
-SELECT table_schema AS view_schema,
-table_name AS view_name,
-view_definition
-FROM INFORMATION_SCHEMA.VIEWS
-ORDER BY table_schema,table_name;
+SELECT views.view_schema,
+views.view_name,
+sql_modules.definition AS view_definition
+FROM 
+(
+	SELECT table_schema AS view_schema,
+	table_name AS view_name,
+	OBJECT_ID(CONCAT(table_schema,'.',table_name)) AS object_id
+	FROM INFORMATION_SCHEMA.VIEWS
+)AS views
+INNER JOIN sys.sql_modules
+ON views.object_id = sql_modules.object_id
+ORDER BY views.view_schema,views.view_name;
 
 """
 
