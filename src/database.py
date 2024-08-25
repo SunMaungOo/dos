@@ -238,7 +238,7 @@ def create_index_object(index_info:List[IndexInfo])->List[DatabaseObject]:
                 else:
                     index_definition+="ASC"
 
-                is_last_column = index==len(sorted_index_column)
+                is_last_column = index==len(sorted_index_column)-1
 
                 if not is_last_column:
                     index_definition+=","
