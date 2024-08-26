@@ -57,10 +57,12 @@ ordinal_position;
 
 GET_FUNCTION_SQL = """
 
-SELECT SCHEMA_NAME(schema_id) AS function_schema,
-OBJECT_NAME(object_id) AS function_name,
-OBJECT_DEFINITION(object_id) AS function_definition
-FROM sys.objects
+SELECT SCHEMA_NAME(funcs.schema_id) AS function_schema,
+OBJECT_NAME(funcs.object_id) AS function_name,
+sql_modules.definition AS function_definition
+FROM sys.objects AS funcs
+INNER JOIN sys.sql_modules
+ON funcs.object_id  = sql_modules.object_id
 WHERE type IN 
 (
 	--scalar function
@@ -70,9 +72,8 @@ WHERE type IN
 	--table-valued function
 	'TF'
 )
-ORDER BY SCHEMA_NAME(schema_id),
-OBJECT_NAME(object_id);
-
+ORDER BY SCHEMA_NAME(funcs.schema_id),
+OBJECT_NAME(funcs.object_id);
 """
 
 GET_INDEX_SQL = """
