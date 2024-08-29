@@ -1,8 +1,8 @@
 import urllib
 from sqlalchemy import create_engine,text
-from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL
+from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL,GET_EXTERNAL_DATA_SOURCE
 from typing import List,Dict
-from model import DatabaseObject,ObjectType,TableInfo,IndexInfo
+from model import DatabaseObject,ObjectType,TableInfo,IndexInfo,ExtDataSourceInfo
 from func import group_by
 
 
@@ -131,6 +131,29 @@ def get_index_object(connection_str:str)->List[DatabaseObject]:
 
     return result
 
+def get_ext_data_source_object(connection_str:str)->List[DatabaseObject]:
+
+    result:List[DatabaseObject] = list()
+
+    engine = create_engine(connection_str)
+
+    ext_data_source_info:List[ExtDataSourceInfo] = list()
+
+    with engine.connect() as connection:
+        result_set = connection.execute(statement=text(GET_EXTERNAL_DATA_SOURCE))
+
+        for row in result_set:
+            ext_data_source_info.append(ExtDataSourceInfo(
+                external_data_source_name=row[0],
+                external_data_source_type=row[1],
+                external_data_source_location=row[2],
+                credential_name=row[3]
+            ))
+
+    result = create_external_data_source_object(ext_data_source_info=ext_data_source_info)
+
+    return result
+
 def create_table_object(table_info:List[TableInfo])->List[DatabaseObject]:
 
     table_object:List[DatabaseObject] = list()
@@ -255,3 +278,27 @@ def create_index_object(index_info:List[IndexInfo])->List[DatabaseObject]:
                                             object_type=ObjectType.INDEX))
 
     return index_object
+
+def create_external_data_source_object(ext_data_source_info:List[ExtDataSourceInfo])->List[DatabaseObject]:
+    ext_data_source_object:List[DatabaseObject] = list()
+
+    for x in ext_data_source_info:
+
+        object_definition = f"CREATE EXTERNAL DATA SOURCE {x.external_data_source_name}\n"
+        object_definition += "WITH\n(\n"
+
+        if x.external_data_source_type is not "NONE":
+            object_definition += f"TYPE = {x.external_data_source_type},\n"
+        
+        object_definition += f"LOCATION = \'{x.external_data_source_location}\',\n"
+        object_definition += f"CREDENTIAL = {x.credential_name}\n"
+
+        object_definition += ");";
+
+        ext_data_source_object.append(DatabaseObject(object_schema=None,\
+                                                     object_name=x.external_data_source_name,\
+                                                     object_definition=object_definition,\
+                                                     object_type=ObjectType.EXTDATASOURCE))
+
+
+    return ext_data_source_object

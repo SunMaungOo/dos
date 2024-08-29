@@ -2,7 +2,7 @@ import sys
 from typing import Optional,List
 from model import ConnectionInfo,DatabaseObject,ObjectType
 from database import get_connection_string,test_connection,get_table_object
-from database import get_view_object,get_function_object,get_procedure_object,get_index_object
+from database import get_view_object,get_function_object,get_procedure_object,get_index_object,get_ext_data_source_object
 from config import REMOTE_DIR
 from pathlib import Path
 import sys
@@ -142,6 +142,15 @@ def main(argv)->int:
             print("fail")
             return 1
         
+        print("extracting external data source:",end="")
+
+        try:
+            database_objects.extend(get_ext_data_source_object(connection_str=connection_str))
+            print("success")
+        except:
+            print("fail")
+            return 1
+        
         dos_path = Path(REMOTE_DIR)
 
         if not dos_path.exists():
@@ -175,11 +184,17 @@ def write_database_object(root_dir:str,remote_name:str,database_object:DatabaseO
         ObjectType.VIEW:"view",
         ObjectType.FUNCTION:"func",
         ObjectType.PROCEDURE:"procedure",
-        ObjectType.INDEX:"index"
+        ObjectType.INDEX:"index",
+        ObjectType.EXTDATASOURCE:"ext_data_source"
     }
 
+    file_name = f"{database_object.object_name}.sql"
+
+    if database_object.object_schema is not None:
+        file_name = f"{database_object.object_schema}.{database_object.object_name}.sql"
+
     database_file_path = Path(f"{root_dir}/{remote_name}/{database_object_folder[database_object.object_type]}"+\
-                         f"/{database_object.object_schema}.{database_object.object_name}.sql")
+                         f"/{file_name}")
     
     database_file_path.parent.mkdir(parents=True, exist_ok=True)
 

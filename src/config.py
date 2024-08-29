@@ -141,3 +141,16 @@ routines.routine_name;
 
 """
 
+GET_EXTERNAL_DATA_SOURCE = """
+
+SELECT external_data_sources.name AS external_data_source_name,
+external_data_sources.type_desc AS external_data_source_type,
+external_data_sources.location AS external_data_source_location,
+credentials.name AS credential_name
+FROM sys.external_data_sources
+LEFT JOIN sys.database_scoped_credentials AS credentials
+ON external_data_sources.credential_id = credentials.credential_id
+ORDER BY external_data_sources.name;
+
+"""
+

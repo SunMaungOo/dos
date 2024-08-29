@@ -6,7 +6,8 @@ class ObjectType(str,Enum):
     VIEW="view",
     INDEX="index",
     FUNCTION="function",
-    PROCEDURE="procedure"
+    PROCEDURE="procedure",
+    EXTDATASOURCE="ext_data_source"
 
 
 @dataclass
@@ -37,6 +38,14 @@ class IndexInfo:
     column_position:int
     is_included_column:bool
     is_descending_key:bool
+
+@dataclass
+class ExtDataSourceInfo:
+    external_data_source_name:str
+    external_data_source_type:str
+    external_data_source_location:str
+    credential_name:str
+
 
 @dataclass
 class ConnectionInfo:

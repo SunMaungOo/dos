@@ -1,5 +1,5 @@
-from database import create_table_object,create_index_object
-from model import TableInfo,ObjectType,IndexInfo
+from database import create_table_object,create_index_object,create_external_data_source_object
+from model import TableInfo,ObjectType,IndexInfo,ExtDataSourceInfo
 
 def test_single_column_table():
 
@@ -152,8 +152,6 @@ def test_multiple_index_column_multiple_include_column_index():
     assert database_objects[0].object_schema=="test"
     assert database_objects[0].object_name=="idx_test"
     assert database_objects[0].object_type==ObjectType.INDEX
-
-    print(database_objects[0].object_definition)
     
     expected_object_definition = "CREATE NON CLUSTERED INDEX [idx_test]ON [test].[foo] ([c1] DESC,[c2] DESC)INCLUDE ([ic1] DESC,[ic2] DESC);".split(" ")
 
@@ -163,7 +161,59 @@ def test_multiple_index_column_multiple_include_column_index():
 
     for index in range(len(expected_object_definition)):
         assert expected_object_definition[index]==actual_object_definition[index]
+
+def test_no_type_external_data_source():
+
+    database_objects = create_external_data_source_object(ext_data_source_info=[
+        ExtDataSourceInfo(
+            external_data_source_name="ExtTest",
+            external_data_source_type="NONE",
+            external_data_source_location="https://testing.com/",
+            credential_name="test_credential"
+        )
+    ])
+
+    assert len(database_objects)==1
+
+    assert database_objects[0].object_schema is None
+    assert database_objects[0].object_name=="ExtTest"
+    assert database_objects[0].object_type==ObjectType.EXTDATASOURCE
+
+    expected_object_definition = "CREATE EXTERNAL DATA SOURCE ExtTestWITH(LOCATION = 'https://testing.com/',CREDENTIAL = test_credential);".split(" ")
+
+    actual_object_definition = database_objects[0].object_definition.replace("\n","").split(" ")
+
     
+    assert len(expected_object_definition)==len(actual_object_definition)
+
+    for index in range(len(expected_object_definition)):
+        assert expected_object_definition[index]==actual_object_definition[index]
+
+def test_type_external_data_source():
+    database_objects = create_external_data_source_object(ext_data_source_info=[
+        ExtDataSourceInfo(
+            external_data_source_name="ExtTest",
+            external_data_source_type="HADOOP",
+            external_data_source_location="https://testing.com/",
+            credential_name="test_credential"
+        )
+    ])
+
+    assert len(database_objects)==1
+
+    assert database_objects[0].object_schema is None
+    assert database_objects[0].object_name=="ExtTest"
+    assert database_objects[0].object_type==ObjectType.EXTDATASOURCE
+
+    expected_object_definition = "CREATE EXTERNAL DATA SOURCE ExtTestWITH(TYPE = HADOOP,LOCATION = 'https://testing.com/',CREDENTIAL = test_credential);".split(" ")
+
+    actual_object_definition = database_objects[0].object_definition.replace("\n","").split(" ")
+
+    
+    assert len(expected_object_definition)==len(actual_object_definition)
+
+    for index in range(len(expected_object_definition)):
+        assert expected_object_definition[index]==actual_object_definition[index]
 
 
 def test_main():
@@ -171,6 +221,8 @@ def test_main():
     test_multiple_column_table()
     test_single_index_column_single_include_column_index()
     test_multiple_index_column_multiple_include_column_index()
+    test_no_type_external_data_source()
+    test_type_external_data_source()
 
 if __name__=="__main__":
     test_main()
