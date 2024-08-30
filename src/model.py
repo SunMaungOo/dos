@@ -8,7 +8,8 @@ class ObjectType(str,Enum):
     FUNCTION="function",
     PROCEDURE="procedure",
     EXTDATASOURCE="ext_data_source",
-    EXTTABLE="ext_table"
+    EXTTABLE="ext_table",
+    EXTFILEFORMAT="ext_file_format"
 
 
 @dataclass

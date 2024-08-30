@@ -1,7 +1,7 @@
 import urllib
 from sqlalchemy import create_engine,text
 from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL,GET_EXTERNAL_DATA_SOURCE_SQL
-from config import GET_EXTERNAL_TABLE_SQL
+from config import GET_EXTERNAL_TABLE_SQL,GET_EXTERNAL_FILE_FORMAT_SQL
 from typing import List,Dict
 from model import DatabaseObject,ObjectType,TableInfo,IndexInfo,ExtDataSourceInfo,ExtTableInfo
 from func import group_by
@@ -180,6 +180,90 @@ def get_ext_table_object(connection_str:str)->List[DatabaseObject]:
             ))
 
     result = create_external_table_object(ext_table_info=ext_table_info)
+
+    return result
+
+def get_ext_file_format_object(connection_str)->List[DatabaseObject]:
+
+    result:List[DatabaseObject] = list()
+
+    engine = create_engine(connection_str)
+
+    with engine.connect() as connection:
+        result_set = connection.execute(statement=text(GET_EXTERNAL_FILE_FORMAT_SQL))
+
+        for row in result_set:
+
+            file_format_name = row[0]
+
+            format_type = row[1]
+
+            field_terminator = row[2]
+
+            string_terminator = row[3]
+
+            use_type_default = bool(row[4])
+
+            first_row = row[5]
+
+            has_format_option = field_terminator is not None or\
+                (string_terminator is not None and len(string_terminator)>0) or\
+                    use_type_default
+            
+            has_previous_format_field = False
+
+            object_definition = f"CREATE EXTERNAL FILE FORMAT [{file_format_name}]\n"
+            object_definition += "WITH\n(\n"
+            object_definition += f"FORMAT_TYPE = {format_type}"
+
+
+            #if there is at least 1 format option
+
+            if has_format_option:
+                object_definition += ",\n"
+                object_definition += "FORMAT_OPTIONS\n(\n"
+
+            if field_terminator is not None:
+                object_definition+= f"FIELD_TERMINATOR =  N\'{field_terminator}\'"
+
+                has_previous_format_field = True
+            
+            if string_terminator is not None and len(string_terminator)>0:
+
+                if has_previous_format_field:
+                    object_definition += ",\n"
+
+                object_definition+= f"STRING_DELIMITER = N\'{string_terminator}\'"
+
+                has_previous_format_field = True
+
+
+            if first_row is not None:
+
+                if has_previous_format_field:
+                    object_definition += ",\n"
+
+                object_definition+= f"FIRST_ROW = {first_row}"
+
+                has_previous_format_field = True
+
+ 
+            if use_type_default:
+
+                if has_previous_format_field:
+                    object_definition += ",\n"
+                    
+                object_definition+= "USE_TYPE_DEFAULT = True\n"
+
+            if has_format_option:
+                object_definition += ")"
+
+            object_definition += "\n);"
+
+            result.append(DatabaseObject(object_schema=None,\
+                                     object_name=file_format_name,\
+                                    object_definition=object_definition,\
+                                    object_type=ObjectType.EXTFILEFORMAT))
 
     return result
 

@@ -3,7 +3,7 @@ from typing import Optional,List
 from model import ConnectionInfo,DatabaseObject,ObjectType
 from database import get_connection_string,test_connection,get_table_object
 from database import get_view_object,get_function_object,get_procedure_object,get_index_object,get_ext_data_source_object
-from database import get_ext_table_object
+from database import get_ext_table_object,get_ext_file_format_object
 from config import REMOTE_DIR
 from pathlib import Path
 import sys
@@ -161,6 +161,15 @@ def main(argv)->int:
             print("fail")
             return 1
         
+        print("extracting external file format:",end="")
+
+        try:
+            database_objects.extend(get_ext_file_format_object(connection_str=connection_str))
+            print("success")
+        except:
+            print("fail")
+            return 1
+        
         dos_path = Path(REMOTE_DIR)
 
         if not dos_path.exists():
@@ -196,7 +205,8 @@ def write_database_object(root_dir:str,remote_name:str,database_object:DatabaseO
         ObjectType.PROCEDURE:"procedure",
         ObjectType.INDEX:"index",
         ObjectType.EXTDATASOURCE:"ext_data_source",
-        ObjectType.EXTTABLE:"ext_table"
+        ObjectType.EXTTABLE:"ext_table",
+        ObjectType.EXTFILEFORMAT:"ext_file_format"
     }
 
     file_name = f"{database_object.object_name}.sql"

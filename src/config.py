@@ -203,4 +203,16 @@ all_columns.column_id;
 
 """
 
+GET_EXTERNAL_FILE_FORMAT_SQL = """
+
+SELECT name AS file_format_name,
+format_type,
+field_terminator,
+string_delimiter,
+use_type_default,
+first_row
+FROM sys.external_file_formats
+ORDER BY file_format_name;
+
+"""
 
