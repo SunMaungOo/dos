@@ -1,6 +1,6 @@
 import urllib
 from sqlalchemy import create_engine,text
-from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL,GET_EXTERNAL_DATA_SOURCE
+from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL,GET_EXTERNAL_DATA_SOURCE_SQL
 from typing import List,Dict
 from model import DatabaseObject,ObjectType,TableInfo,IndexInfo,ExtDataSourceInfo
 from func import group_by
@@ -140,7 +140,7 @@ def get_ext_data_source_object(connection_str:str)->List[DatabaseObject]:
     ext_data_source_info:List[ExtDataSourceInfo] = list()
 
     with engine.connect() as connection:
-        result_set = connection.execute(statement=text(GET_EXTERNAL_DATA_SOURCE))
+        result_set = connection.execute(statement=text(GET_EXTERNAL_DATA_SOURCE_SQL))
 
         for row in result_set:
             ext_data_source_info.append(ExtDataSourceInfo(
@@ -287,7 +287,7 @@ def create_external_data_source_object(ext_data_source_info:List[ExtDataSourceIn
         object_definition = f"CREATE EXTERNAL DATA SOURCE {x.external_data_source_name}\n"
         object_definition += "WITH\n(\n"
 
-        if x.external_data_source_type is not "NONE":
+        if x.external_data_source_type != "NONE":
             object_definition += f"TYPE = {x.external_data_source_type},\n"
         
         object_definition += f"LOCATION = \'{x.external_data_source_location}\',\n"

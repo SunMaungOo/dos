@@ -141,7 +141,7 @@ routines.routine_name;
 
 """
 
-GET_EXTERNAL_DATA_SOURCE = """
+GET_EXTERNAL_DATA_SOURCE_SQL = """
 
 SELECT external_data_sources.name AS external_data_source_name,
 external_data_sources.type_desc AS external_data_source_type,
@@ -153,4 +153,5 @@ ON external_data_sources.credential_id = credentials.credential_id
 ORDER BY external_data_sources.name;
 
 """
+
 
