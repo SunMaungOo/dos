@@ -155,3 +155,52 @@ ORDER BY external_data_sources.name;
 """
 
 
+GET_EXTERNAL_TABLE_SQL = """
+
+SELECT SCHEMA_NAME(external_tables.schema_id) AS external_table_schema, 
+external_tables.name AS external_table_name,
+all_columns.name AS column_name,
+types.name AS data_type,
+CASE
+	WHEN types.name IN 
+	(
+		'char',
+		'varchar',
+		'nchar',
+		'nvarchar'
+	)
+	THEN 
+		CASE
+			WHEN all_columns.max_length = -1
+			THEN 'max'
+			ELSE CAST(all_columns.max_length AS nvarchar(10))
+		END
+	WHEN types.name IN 
+	(
+		'decimal',
+		'numeric'
+	)
+	THEN '('+CAST(all_columns.precision AS nvarchar(10)) + ',' + CAST(all_columns.scale AS nvarchar(10)) + ')'
+	ELSE NULL
+END AS data_type_length,
+all_columns.is_nullable,
+all_columns.column_id AS ordinal_position,
+external_tables.location AS external_location,
+external_data_sources.name AS external_data_source_name,
+external_file_formats.name AS file_format_name
+FROM sys.external_tables
+LEFT JOIN sys.external_data_sources 
+ON external_tables.data_source_id =  external_data_sources.data_source_id
+LEFT JOIN sys.external_file_formats
+ON external_tables.file_format_id = external_file_formats.file_format_id
+LEFT JOIN sys.all_columns 
+ON external_tables.object_id = all_columns.object_id
+LEFT JOIN sys.types
+ON all_columns.user_type_id = types.user_type_id
+ORDER BY SCHEMA_NAME(external_tables.schema_id),
+external_tables.name,
+all_columns.column_id;
+
+"""
+
+

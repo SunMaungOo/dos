@@ -1,8 +1,9 @@
 import urllib
 from sqlalchemy import create_engine,text
 from config import GET_VIEW_CODE,GET_TABLE_SQL,GET_FUNCTION_SQL,GET_PROCEDURE_SQL,GET_INDEX_SQL,GET_EXTERNAL_DATA_SOURCE_SQL
+from config import GET_EXTERNAL_TABLE_SQL
 from typing import List,Dict
-from model import DatabaseObject,ObjectType,TableInfo,IndexInfo,ExtDataSourceInfo
+from model import DatabaseObject,ObjectType,TableInfo,IndexInfo,ExtDataSourceInfo,ExtTableInfo
 from func import group_by
 
 
@@ -154,6 +155,34 @@ def get_ext_data_source_object(connection_str:str)->List[DatabaseObject]:
 
     return result
 
+def get_ext_table_object(connection_str:str)->List[DatabaseObject]:
+    result:List[DatabaseObject] = list()
+
+    engine = create_engine(connection_str)
+
+    ext_table_info:List[ExtTableInfo] = list()
+
+    with engine.connect() as connection:
+        result_set = connection.execute(statement=text(GET_EXTERNAL_TABLE_SQL))
+
+        for row in result_set:
+            ext_table_info.append(ExtTableInfo(
+                external_table_schema=row[0],
+                external_table_name=row[1],
+                column_name=row[2],
+                data_type=row[3],
+                data_type_length=row[4],
+                is_nullable=bool(row[5]),
+                ordinal_position=int(row[6]),
+                external_location=row[7],
+                external_data_source_name=row[8],
+                file_format_name=row[9]
+            ))
+
+    result = create_external_table_object(ext_table_info=ext_table_info)
+
+    return result
+
 def create_table_object(table_info:List[TableInfo])->List[DatabaseObject]:
 
     table_object:List[DatabaseObject] = list()
@@ -302,3 +331,62 @@ def create_external_data_source_object(ext_data_source_info:List[ExtDataSourceIn
 
 
     return ext_data_source_object
+
+def create_external_table_object(ext_table_info:List[ExtTableInfo])->List[DatabaseObject]:
+
+    ext_table_object:List[DatabaseObject] = list()
+
+    grouped_table_info:Dict[str,List[ExtTableInfo]] = group_by(objects=ext_table_info,\
+                                                            group_key_func=lambda x: x.external_table_schema+"."+x.external_table_name)
+
+    for object_key in grouped_table_info:
+
+        sorted_table_info = sorted(grouped_table_info[object_key],\
+                                   key=lambda x:x.ordinal_position)
+        
+        first_object = sorted_table_info[0]
+        
+        table_definition = f"CREATE EXTERNAL TABLE [{first_object.external_table_schema}].[{first_object.external_table_name}]\n(\n"
+
+        for index in range(len(sorted_table_info)):
+
+            x = sorted_table_info[index]
+
+            if x.data_type_length is None:
+                table_definition+=f"[{x.column_name}] {x.data_type} "
+            else:
+                if x.data_type_length=="max":
+                    table_definition+=f"[{x.column_name}] {x.data_type}(max) "
+                else:
+                    if "(" not in x.data_type_length:
+                        x.data_type_length="("+x.data_type_length+")"
+
+                    table_definition+=f"[{x.column_name}] {x.data_type}{x.data_type_length} "
+
+            if x.is_nullable:
+                table_definition+="NULL"
+            else:
+                table_definition+="NOT NULL"
+
+            is_last_column = index==len(sorted_table_info)-1
+
+            if not is_last_column:
+                table_definition+=","
+            
+            table_definition+="\n"
+
+
+        table_definition+=")\n"
+        table_definition+="WITH\n"
+        table_definition+="(\n"
+        table_definition+=f"LOCATION = N\'{first_object.external_location}\',\n"
+        table_definition+=f"DATA_SOURCE = {first_object.external_data_source_name},\n"
+        table_definition+=f"FILE_FORMAT = N\'{first_object.file_format_name}\'\n"
+        table_definition+=");"
+
+        ext_table_object.append(DatabaseObject(object_schema=first_object.external_table_schema,\
+                                           object_name=first_object.external_table_name,\
+                                            object_definition=table_definition,\
+                                            object_type=ObjectType.EXTTABLE))
+        
+    return ext_table_object

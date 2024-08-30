@@ -7,7 +7,8 @@ class ObjectType(str,Enum):
     INDEX="index",
     FUNCTION="function",
     PROCEDURE="procedure",
-    EXTDATASOURCE="ext_data_source"
+    EXTDATASOURCE="ext_data_source",
+    EXTTABLE="ext_table"
 
 
 @dataclass
@@ -55,4 +56,16 @@ class ConnectionInfo:
     password:str
 
 
+@dataclass
+class ExtTableInfo:
+    external_table_schema:str
+    external_table_name:str
+    column_name:str
+    data_type:str
+    data_type_length:str
+    is_nullable:bool
+    ordinal_position:int
+    external_location:str
+    external_data_source_name:str
+    file_format_name:str
 
