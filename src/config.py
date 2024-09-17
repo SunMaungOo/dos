@@ -20,12 +20,12 @@ ORDER BY views.view_schema,views.view_name;
 
 GET_TABLE_SQL = """
 
-SELECT table_schema,
-table_name,
-column_name,
-data_type,
+SELECT COLUMNS.table_schema,
+COLUMNS.table_name,
+COLUMNS.column_name,
+COLUMNS.data_type,
 CASE
-	WHEN data_type IN 
+	WHEN COLUMNS.data_type IN 
 	(
 		'char',
 		'varchar',
@@ -34,24 +34,35 @@ CASE
 	)
 	THEN 
 		CASE
-			WHEN character_maximum_length = -1
+			WHEN COLUMNS.character_maximum_length = -1
 			THEN 'max'
-			ELSE CAST(character_maximum_length AS nvarchar(10))
+			ELSE CAST(COLUMNS.character_maximum_length AS nvarchar(10))
 		END
-	WHEN data_type IN 
+	WHEN COLUMNS.data_type IN 
 	(
 		'decimal',
 		'numeric'
 	)
-	THEN '('+CAST(numeric_precision AS nvarchar(10)) + ',' + CAST(numeric_scale AS nvarchar(10)) + ')'
+	THEN '('+CAST(COLUMNS.numeric_precision AS nvarchar(10)) + ',' + CAST(COLUMNS.numeric_scale AS nvarchar(10)) + ')'
 	ELSE NULL
 END AS data_type_length,
-is_nullable,
-ordinal_position
+COLUMNS.is_nullable,
+COLUMNS.ordinal_position
 FROM INFORMATION_SCHEMA.COLUMNS
-ORDER BY table_schema,
-table_name,
-ordinal_position;
+INNER JOIN 
+(
+	SELECT table_schema,
+	table_name
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE table_type = 'BASE TABLE'
+)AS base_table
+ON COLUMNS.table_schema = base_table.table_schema
+AND COLUMNS.table_name = base_table.table_name
+ORDER BY COLUMNS.table_schema,
+COLUMNS.table_name,
+COLUMNS.ordinal_position;
+
+
 
 """
 
